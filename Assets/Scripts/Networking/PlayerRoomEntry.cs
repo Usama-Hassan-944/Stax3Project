@@ -1,49 +1,70 @@
+using sy.Networking;
+using System;
+using Unity.Services.Authentication;
+using Unity.Services.Lobbies.Models;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class PlayerRoomEntry : MonoBehaviour
 {
+    #region Fields
+
     [Header("UI References")]
-    public Text PlayerNameText;
-    public Button PlayerReadyButton;
-    public GameObject PlayerReadyImage;
+    public Text playerNameText;
+    public Button playerReadyButton;
+    public GameObject playerReadyImage;
 
     private int ownerId;
-    private bool isPlayerReady;
+    private bool isPlayerReady = false;
 
-    #region UNITY
+    #endregion
 
-    public void OnEnable()
+    #region Unity Events
+
+    private void Start()
     {
-
-    }
-
-    public void Start()
-    {
-        
-    }
-
-    public void OnDisable()
-    {
-
+        // playerReadyButton.onClick.AddListener(() => UpdateReadyStatus());
     }
 
     #endregion
 
-    public void Initialize(int playerId, string playerName)
+    #region Methods
+
+    public void UpdateReadyStatus()
     {
-        ownerId = playerId;
-        PlayerNameText.text = playerName;
+        isPlayerReady = !isPlayerReady;
+        // LobbyManager.instance.UpdatePlayerReadyStatus(isPlayerReady);
     }
 
-    private void OnPlayerNumberingChanged()
+    public void UpdateEntry(Player player)
     {
-        
+        playerNameText.text = player.Data["PlayerName"].Value;
+        if (player.Data["Status"].Value == "0")
+        {
+            isPlayerReady = false;
+        }
+
+        else
+        {
+            isPlayerReady = true;
+        }
+
+        // UpdateReadyUI(player);
     }
 
-    public void SetPlayerReady(bool playerReady)
+    public void UpdateReadyUI(Player player)
     {
-        PlayerReadyButton.GetComponentInChildren<TMPro.TMP_Text>().text = playerReady ? "Ready!" : "Ready?";
-        PlayerReadyImage.SetActive(playerReady);
+        if (player.Id == AuthenticationService.Instance.PlayerId)
+        {
+            playerReadyButton.gameObject.SetActive(true);
+            if (isPlayerReady)
+            {
+                playerReadyImage.gameObject.SetActive(isPlayerReady);
+                playerReadyButton.interactable = !isPlayerReady;
+            }
+        }
     }
+
+    #endregion
+
 }

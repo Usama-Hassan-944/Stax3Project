@@ -26,8 +26,10 @@ namespace sy.UI
         [Header("Join Room Fields")]
         public Button joinRoomConfirm;
 
+        [Header("Leave Room")]
+        public Button leaveRoomButton;
+
         [Header("Network")]
-        public GameObject NetworkManager;
         public LobbyManager lobbyManager;
 
         #endregion
@@ -37,6 +39,8 @@ namespace sy.UI
         private void Start()
         {
             createRoomConfirm.onClick.AddListener(() => TryCreateLobby());
+            joinRoomConfirm.onClick.AddListener(() => TryJoinLobby());
+            leaveRoomButton.onClick.AddListener(() => TryLeaveLobby());
         }
 
         #endregion
@@ -65,20 +69,24 @@ namespace sy.UI
             ValidateLobby();
             if (_lobbyIsValid)
             {
-                // lobbyManager.CreateLobby();
+                lobbyManager.CreateLobby();
                 _lobbyIsValid = false;
-                createRoomPanel.SetActive(false);
             }
         }
+
         public void TryJoinLobby()
         {
             ValidateLobby();
             if (_lobbyIsValid)
             {
-                // lobbyManager.QuickJoinLobby();
+                lobbyManager.JoinLobby();
                 _lobbyIsValid = false;
-                joinRoomPanel.SetActive(false);
             }
+        }
+        
+        public void TryLeaveLobby()
+        {
+            lobbyManager.LeaveLobby();
         }
 
         #endregion
@@ -94,7 +102,6 @@ namespace sy.UI
         {
             multiplayerMenu.SetActive(false);
             mainMenu.SetActive(true);
-            NetworkManager?.SetActive(false);
         }
 
         public void OpenJoinRoom()
@@ -120,7 +127,6 @@ namespace sy.UI
         {
             lobbyPanel.SetActive(true);
         }
-
 
         public void CloseLobby()
         {
