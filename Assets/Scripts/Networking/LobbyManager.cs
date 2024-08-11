@@ -11,6 +11,9 @@ using sy.Data;
 using sy.UI;
 using ParrelSync;
 using Unity.VisualScripting;
+using static UnityEditor.Progress;
+using Unity.Netcode;
+using UnityEngine.SceneManagement;
 
 namespace sy.Networking
 {
@@ -20,6 +23,7 @@ namespace sy.Networking
 
         public static LobbyManager instance;
         public MultiplayerUIManager multiplayerUIManager;
+        public TestRelay testRelay;
         private Action UpdateLobby;
         public Lobby joinedLobby;
         private float heartbeatTimer;
@@ -67,7 +71,6 @@ namespace sy.Networking
             options.SetProfile(ClonesManager.IsClone() ? ClonesManager.GetArgument() : "Primary");
 #endif
             await UnityServices.InitializeAsync(options);
-
             AuthenticationService.Instance.SignedIn += () =>
             {
                 Debug.Log("Signed in " + AuthenticationService.Instance.PlayerId);
@@ -86,6 +89,15 @@ namespace sy.Networking
                     lobbyUpdateTimer = lobbyPollTimerMax;
                     joinedLobby = await LobbyService.Instance.GetLobbyAsync(joinedLobby.Id);
                     LobbyUI.instance.UpdateLobby(joinedLobby);
+
+                    if (joinedLobby.Data["RelayJoinCode"].Value != "0")
+                    {
+                        if (!IsHostOfLobby())
+                        {
+                            testRelay.JoinRelay(joinedLobby.Data["RelayJoinCode"].Value);
+                        }
+                        joinedLobby = null;
+                    }
                 }
             }
         }
@@ -128,7 +140,7 @@ namespace sy.Networking
                 IsPrivate = false,
                 Data = new Dictionary<string, DataObject>
             {
-                {"JoinCode", new DataObject(DataObject.VisibilityOptions.Member, "0" )},
+                {"RelayJoinCode", new DataObject(DataObject.VisibilityOptions.Member, "0" )},
                 {"LobbyID", new DataObject(DataObject.VisibilityOptions.Public, PlayerPrefs.GetString("CurrentLobby"),DataObject.IndexOptions.S5)}
             }
             };
@@ -297,6 +309,35 @@ namespace sy.Networking
                 catch (LobbyServiceException e)
                 {
                     Debug.Log(e);
+                }
+            }
+        }
+
+        public async void StartGame()
+        {
+            if (IsHostOfLobby())
+            {
+                try
+                {
+                    string relayCode = await testRelay.CreateRelay();
+                    UpdateLobbyOptions options = new UpdateLobbyOptions
+                    {
+                        Data = new Dictionary<string, DataObject>
+                        {
+                            {"RelayJoinCode", new DataObject(DataObject.VisibilityOptions.Member, relayCode )},
+                        }
+                    };
+
+                    Lobby lobby = await LobbyService.Instance.UpdateLobbyAsync(joinedLobby.Id, options);
+                    joinedLobby = lobby;
+
+                    NetworkManager.Singleton.StartHost();
+                    SceneManager.LoadScene("Gameplay");
+                }
+
+                catch (LobbyServiceException e)
+                {
+                    Debug.LogError(e);
                 }
             }
         }

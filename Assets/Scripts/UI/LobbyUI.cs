@@ -69,7 +69,8 @@ namespace sy.Networking
 
         public void StartGame()
         {
-
+            Debug.LogError("StartGame clicked");
+            LobbyManager.instance.StartGame();
         }
 
         #endregion
