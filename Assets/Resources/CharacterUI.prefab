@@ -202,7 +202,7 @@ MonoBehaviour:
   m_MinValue: 0
   m_MaxValue: 500
   m_WholeNumbers: 0
-  m_Value: 5
+  m_Value: 0
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -408,7 +408,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Evil Wizard
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 18e5ede33e490485d9576cb16d82ad1e, type: 2}
   m_sharedMaterial: {fileID: -4171563015097924827, guid: 18e5ede33e490485d9576cb16d82ad1e, type: 2}
@@ -1412,6 +1412,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 53d92ab8207384e4d99fa28faa222c75, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  name: {fileID: 3548867138321919525}
+  icon: {fileID: 3548867138856247758}
+  healthText: {fileID: 3548867138448935157}
+  defenceText: {fileID: 3548867139864461867}
+  attackText: {fileID: 3548867138519747208}
+  healthSlider: {fileID: 448724762485277592}
+  defenceSlider: {fileID: 3548867139971237648}
+  attackSlider: {fileID: 3548867139188954802}
+  spawnIndex: 0
+  characterProps: {fileID: 0}
+  resource: {fileID: 0}
+  body: {fileID: 0}
+  blockID: 0
+  Health:
+    m_InternalValue: 0
+  AttackPower:
+    m_InternalValue: 0
+  Defence:
+    m_InternalValue: 0
 --- !u!1 &3548867139461295682
 GameObject:
   m_ObjectHideFlags: 0

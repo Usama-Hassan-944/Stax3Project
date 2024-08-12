@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 7048646635807830476}
   m_Layer: 0
   m_Name: Character
-  m_TagString: Untagged
+  m_TagString: CharacterBody
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -150,6 +150,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4dd54662abdd9a349947e0506647626d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  player_controller: {fileID: 0}
+  character_controller: {fileID: 0}
+  SPAWN: {fileID: 0}
+  dieVFX: {fileID: 3053407613871910937}
+  healthVFX: {fileID: 2442928601466658122}
+  specialVFX: {fileID: 5458240109083409178}
+  isAttackUsed: 0
+  isMoveUsed: 0
+  networkObject: {fileID: 0}
 --- !u!114 &7048646635807830476
 MonoBehaviour:
   m_ObjectHideFlags: 0

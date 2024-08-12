@@ -4,26 +4,31 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using Unity.Netcode;
+using sy.Data;
+using Unity.VisualScripting;
+using Unity.Collections;
 
 public class PlayerController : NetworkBehaviour
 {
+    public NetworkVariable<NetworkString> userName = new NetworkVariable<NetworkString>();
     public TMP_Text playerName;
     public Transform characterContent;
     public List<CharacterController> characters;
     public GameObject characterPrefab;
     public NetworkObject networkObject;
 
+
     private IEnumerator Start()
     {
+        yield return new WaitForSeconds(4f);
         if (networkObject == null)
         {
-            networkObject = FindObjectOfType<NetworkObject>();
+            networkObject = gameObject.GetComponent<NetworkObject>();
         }
 
-        yield return new WaitForSeconds(2f);
         var spawnPoint = GameObject.FindGameObjectWithTag("SpawnPoint").GetComponent<Transform>();
         this.transform.SetParent(spawnPoint, false);
-        BoardManager.Instance.players.Add(this);
+        BoardManager.instance.players.Add(this);
 
         if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
         {
@@ -38,69 +43,31 @@ public class PlayerController : NetworkBehaviour
             }
         }
 
-        if (IsLocalPlayer)
-        {
-            
-        }
-
-        else
-        {
-            
-        }
+        InitPlayerCharacters();
     }
-    public void InitLocalPlayer()
+
+    public override void OnNetworkSpawn()
     {
-        //if (p.IsMasterClient)
-        //    this.transform.SetAsFirstSibling();
-
-        //PlayerName.text = p.NickName;
-        //UpdateXp((int)p.CustomProperties["XP"]);
-        //InitCharacter((int)p.CustomProperties["c1"], 0);
-        //InitCharacter((int)p.CustomProperties["c2"], 1);
-        //InitCharacter((int)p.CustomProperties["c3"], 2);
-        //InitCharacter((int)p.CustomProperties["c4"], 3);
-
+        userName.Value = "Player " + OwnerClientId + 1;
+        UpdatePlayerUI();
     }
 
-    //    [PunRPC]
-    //    public void RewardPlayerXP(int xp)
-    //    {
-    //          XP += xp;
-    //            UpdateXp(XP);
-    //    }
+    public void UpdatePlayerUI()
+    {
+        playerName.text = userName.Value;
+    }
+    
+    public void InitPlayerCharacters()
+    {
+        Debug.LogError("InitPlayerCharacters  is called");
+        InitCharacter(0, 0);
+        InitCharacter(1, 1);
+    }
 
-    //    void InitCharacter(int ID, int index)
-    //    {
-    //        characters[index].Init(ID, index);
-    //    }
-    //    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
-    //    {
-    //        if (stream.IsWriting)
-    //        {
-    //            stream.SendNext(XP);
-    //        }
-    //        if (stream.IsReading)
-    //        {
-    //            UpdateXp((int)stream.ReceiveNext());
-    //        }
-    //    }
-
-    //    public void UpdateXp(int Xp)
-    //    {
-    //        if (Xp > XpSlider.maxValue)
-    //            XpSlider.maxValue *= 10;
-    //        XpSlider.DOValue(Xp, 1.5f, true);
-    //        PlayerXPText.text = Xp.ToString();
-
-    //    }
-
-    //    public void AssignXP()
-    //    {
-    //        if(!pv.IsMine)
-    //            return;
-
-    //        ClientInfo.XP = XP;
-    //    }
+    void InitCharacter(int ID, int index)
+    {
+        characters[index].Init(this, ID, index);
+    }
 
     //    public void CheckGameEnd()
     //    {
@@ -113,4 +80,25 @@ public class PlayerController : NetworkBehaviour
     //        BoardManager.Instance.pv.RPC("EndGame", RpcTarget.All, PhotonNetwork.LocalPlayer);
     //        AssignXP();
     //    }
+}
+
+public struct NetworkString : INetworkSerializable
+{
+    public FixedString32Bytes info;
+
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref info);
+    }
+
+    public override string ToString()
+    {
+        return info.ToString();
+    }
+
+    public static implicit operator string(NetworkString s) => s.ToString();
+    public static implicit operator NetworkString(string s) => new NetworkString()
+    {
+        info = new FixedString32Bytes(s)
+    };
 }

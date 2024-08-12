@@ -9,8 +9,8 @@ using UnityEngine.UI;
 
 public class BoardManager : MonoBehaviour
 {
-    public GameObject PlayerPrefab;
-    public Transform PlayerContent;
+    public GameObject playerPrefab;
+    public Transform playerContent;
     //    public PhotonView pv;
     //    public GameObject EndTurn;
 
@@ -24,6 +24,7 @@ public class BoardManager : MonoBehaviour
     public List<GameObject> R7;
     public List<GameObject> R8;
         public List<PlayerController> players;
+        public List<NetworkClient> clients;
     //    public List<CubeSyncer> ActiveSyncers;
     //    public GameObject InGameUI;
     //    public List<GameObject> GameMoves;
@@ -35,15 +36,14 @@ public class BoardManager : MonoBehaviour
     //    public bool RESET_ABILITY;
     //    private CharacterController ABILITY_CREATURE;
 
-    private static BoardManager instance;
-    public static BoardManager Instance
-    {
-        get { return instance; }
-    }
+    public static BoardManager instance;
 
     private void Awake()
     {
-        instance = this;
+        if (instance == null)
+        {
+            instance = this;
+        }
         players = new List<PlayerController>();
         // ActiveSyncers = new List<CubeSyncer>();
     }
@@ -58,7 +58,6 @@ public class BoardManager : MonoBehaviour
         //    player.GetComponent<NetworkObject>().Spawn();
         //}
         PopulateBoard();
-
     }
 
     //    public void ResetAbilityData()

@@ -1,23 +1,26 @@
+using sy.Data;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 using static UnityEngine.GraphicsBuffer;
 
-public class CharacterNetworked : MonoBehaviour
+public class CharacterNetworked : NetworkBehaviour
 {
-    //public PhotonView pv;
-    //private List<Transform> self_spawn;
-    //private List<Transform> enemy_spawn;
-    //public PlayerController player_controller;
-    //public CharacterController character_controller;
-    //public const byte MoveUnitsToTargetPositionEventCode = 1;
-    //public GameObject SPAWN;
-    //public GameObject dieVFX;
-    //public GameObject healthVFX;
-    //public GameObject specialVFX;
-    //public bool AttackUsed;
-    //public bool MoveUsed;
-    //public bool LIMIT_SPECIAL;
+    private List<Transform> self_spawn;
+    private List<Transform> enemy_spawn;
+    public PlayerController player_controller;
+    public CharacterController character_controller;
+    public const byte MoveUnitsToTargetPositionEventCode = 1;
+    public GameObject SPAWN;
+    public GameObject dieVFX;
+    public GameObject healthVFX;
+    public GameObject specialVFX;
+    public bool isAttackUsed;
+    public bool isMoveUsed;
+    public NetworkObject networkObject;
 
     //private void OnEnable()
     //{
@@ -31,7 +34,7 @@ public class CharacterNetworked : MonoBehaviour
 
     //private void OnEvent(EventData photonEvent)
     //{
-       
+
     //    byte eventCode = photonEvent.Code;
     //    if (eventCode == MoveUnitsToTargetPositionEventCode)
     //    {
@@ -50,22 +53,27 @@ public class CharacterNetworked : MonoBehaviour
     //        }
     //    }
     //}
-    //private void Awake()
-    //{
-    //    pv = GetComponent<PhotonView>();
-    //    var go = GameObject.FindGameObjectWithTag("CharacterSpawn").gameObject.GetComponent<SpawnPoints>();
 
-    //    if((pv.Owner.IsMasterClient && pv.IsMine) || (!pv.Owner.IsMasterClient && !pv.IsMine))
-    //    {
-    //        self_spawn = go.SelfSpawnPoints;
-    //        enemy_spawn = go.EnemySpawnPoints;
-    //    }
-    //    else if((pv.Owner.IsMasterClient && !pv.IsMine) || (!pv.Owner.IsMasterClient && pv.IsMine))
-    //    {
-    //        self_spawn = go.EnemySpawnPoints;
-    //        enemy_spawn = go.SelfSpawnPoints;
-    //    }
-    //}
+    public override void OnNetworkSpawn()
+    {
+        var go = GameObject.FindGameObjectWithTag("CharacterSpawn").gameObject.GetComponent<SpawnPoints>();
+        networkObject = gameObject.GetComponent<NetworkObject>();
+
+        if (((IsHost || IsServer) && networkObject.IsOwner) || (!(IsServer || IsHost) && !networkObject.IsOwner))
+        {
+            self_spawn = go.SelfSpawnPoints;
+            enemy_spawn = go.EnemySpawnPoints;
+        }
+
+        else if (((IsHost || IsServer) && !networkObject.IsOwner) || (!(IsServer || IsHost) && networkObject.IsOwner))
+        {
+            self_spawn = go.EnemySpawnPoints;
+            enemy_spawn = go.SelfSpawnPoints;
+        }
+
+        this.GetComponent<RectTransform>().anchoredPosition = Vector2.zero;
+    }
+
     //public void OnActionTaken()
     //{
     //    if (!pv.IsMine)
@@ -134,45 +142,87 @@ public class CharacterNetworked : MonoBehaviour
     //{
     //    GameObject.Destroy(this.gameObject);
     //}
-    //[PunRPC]
-    //public void InitCharacter(int ID, int SpawnIndex, int index)
-    //{
-    //    BlockID BLOCK_ID;
-     
-    //    CharacterObject characterProps = GameObject.FindGameObjectsWithTag("CharacterResource")[0].GetComponent<CharacterResource>().FindCharacterWithID(ID).ShallowCopy();
-    //    this.GetComponent<Image>().sprite = characterProps.Character_Sprite;
 
-    //    if (pv.IsMine)
-    //    {
-    //        this.GetComponent<Transform>().SetParent(self_spawn[SpawnIndex]);
-    //        SPAWN = self_spawn[SpawnIndex].gameObject;
+    [ClientRpc]
+    public void InitCharacterClientRpc(int id, int index)
+    {
+        InitCharacter(id, index);
+    }
 
-    //        self_spawn[SpawnIndex].gameObject.name = characterProps.Name;
-    //        BLOCK_ID = self_spawn[SpawnIndex].gameObject.GetComponent<PlayerLocation>().PlayerCurrentBlock;
+    public void InitCharacter(int id, int index)
+    {
+        BlockID BLOCK_ID;
+        GameObject SPAWN = null;
 
-    //        foreach (var p in BoardManager.Instance.players)
-    //            if (p.pv.IsMine)
-    //                player_controller = p;
-    //    }
-    //    else
-    //    {
-    //        this.GetComponent<Transform>().SetParent(enemy_spawn[SpawnIndex]);
-    //        enemy_spawn[SpawnIndex].gameObject.name = characterProps.Name;
-    //        SPAWN = enemy_spawn[SpawnIndex].gameObject;
-    //        this.GetComponent<Image>().raycastTarget = false;
+        CharacterObject characterProps = GameObject.FindGameObjectsWithTag("CharacterResource")[0].GetComponent<CharacterResource>().FindCharacterWithID(id);
+        this.GetComponent<Image>().sprite = characterProps.Character_Sprite;
+        if (IsServer)
+        {
+            if (networkObject.IsOwner)
+            {
+                Debug.LogError("Server: Reparenting character to self_spawn for client id: " + OwnerClientId + ", character id is: " + id + ", spawnIndex is: " + index + ", index is: " + index);
+                this.transform.SetParent(self_spawn[index]);
+                SPAWN = self_spawn[index].gameObject;
+                self_spawn[index].gameObject.name = characterProps.Name;
+            }
 
+            else
+            {
+                Debug.LogError("Server: Reparenting character to enemy_spawn for client id: " + OwnerClientId + ", character id is: " + id + ", spawnIndex is: " + index + ", index is: " + index);
+                this.transform.SetParent(enemy_spawn[index]);
+                SPAWN = enemy_spawn[index].gameObject;
+                enemy_spawn[index].gameObject.name = characterProps.Name;
+            }
+            this.GetComponent<RectTransform>().anchoredPosition = Vector2.zero;
+        }
 
-    //        BLOCK_ID = enemy_spawn[SpawnIndex].gameObject.GetComponent<PlayerLocation>().PlayerCurrentBlock;
+        else
+        {
+            StartCoroutine(SetAnchoredPositionCoroutine());
+        }
+        
+        if (BoardManager.instance.players.Count != 2)
+        {
+            BoardManager.instance.players.Clear();
+            BoardManager.instance.players = FindObjectsOfType<PlayerController>().ToList();
+        }
 
-    //        foreach (var p in BoardManager.Instance.players)
-    //            if (!p.pv.IsMine)
-    //                player_controller = p;
+        if (networkObject.IsOwner)
+        {
+            BLOCK_ID = self_spawn[index].gameObject.GetComponent<PlayerLocation>().PlayerCurrentBlock;
+            foreach (var p in BoardManager.instance.players)
+            {
+                if (p.networkObject.IsOwner)
+                {
+                    player_controller = p;
+                }
+            }
+        }
 
-    //    }
-    //    this.GetComponent<RectTransform>().anchoredPosition = Vector2.zero;
-    //    character_controller = player_controller.characters[index];
-    //    character_controller.blockID = BLOCK_ID;
-    //    character_controller.body = this.gameObject;
-     
-    //}
+        else
+        {
+            BLOCK_ID = enemy_spawn[index].gameObject.GetComponent<PlayerLocation>().PlayerCurrentBlock;
+            foreach (var p in BoardManager.instance.players)
+            {
+                if (!p.networkObject.IsOwner)
+                {
+                    player_controller = p;
+                }
+            }
+        }
+
+        character_controller = player_controller.characters[index];
+        character_controller.blockID = BLOCK_ID;
+        character_controller.body = this.gameObject;
+    }
+    public IEnumerator SetAnchoredPositionCoroutine()
+    {
+        yield return new WaitForSeconds(1f);
+
+        var rectTransform = this.GetComponent<RectTransform>();
+        if (rectTransform != null)
+        {
+            rectTransform.anchoredPosition = Vector2.zero;
+        }
+    }
 }

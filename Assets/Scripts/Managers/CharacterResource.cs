@@ -12,5 +12,17 @@ namespace sy.Data
         }
 
         public List<CharacterObject> characterObjectsLevel1;
+
+        public CharacterObject FindCharacterWithID(int ID)
+        {
+            foreach (CharacterObject character in characterObjectsLevel1)
+            {
+                if (character.ID == ID)
+                {
+                    return character;
+                }
+            }
+            return null;
+        }
     }
 }
