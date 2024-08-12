@@ -5,14 +5,13 @@ using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
-using static UnityEngine.GraphicsBuffer;
 
 public class CharacterNetworked : NetworkBehaviour
 {
-    private List<Transform> self_spawn;
-    private List<Transform> enemy_spawn;
-    public PlayerController player_controller;
-    public CharacterController character_controller;
+    private List<Transform> selfSpawn;
+    private List<Transform> enemySpawn;
+    public PlayerController playerController;
+    public CharacterController characterController;
     public const byte MoveUnitsToTargetPositionEventCode = 1;
     public GameObject SPAWN;
     public GameObject dieVFX;
@@ -61,43 +60,130 @@ public class CharacterNetworked : NetworkBehaviour
 
         if (((IsHost || IsServer) && networkObject.IsOwner) || (!(IsServer || IsHost) && !networkObject.IsOwner))
         {
-            self_spawn = go.SelfSpawnPoints;
-            enemy_spawn = go.EnemySpawnPoints;
+            selfSpawn = go.SelfSpawnPoints;
+            enemySpawn = go.EnemySpawnPoints;
         }
 
         else if (((IsHost || IsServer) && !networkObject.IsOwner) || (!(IsServer || IsHost) && networkObject.IsOwner))
         {
-            self_spawn = go.EnemySpawnPoints;
-            enemy_spawn = go.SelfSpawnPoints;
+            selfSpawn = go.EnemySpawnPoints;
+            enemySpawn = go.SelfSpawnPoints;
         }
 
         this.GetComponent<RectTransform>().anchoredPosition = Vector2.zero;
     }
 
-    //public void OnActionTaken()
-    //{
-    //    if (!pv.IsMine)
-    //        return;
+    [ClientRpc]
+    public void InitCharacterClientRpc(int id, int index)
+    {
+        InitCharacter(id, index);
+    }
 
-    //    if (BoardManager.Instance.EndTurn.GetComponent<PhotonView>().IsMine)
-    //    {
-    //        var _current = BoardManager.Instance.FindLocation(character_controller.blockID);
+    public void InitCharacter(int id, int index)
+    {
+        BlockID BLOCK_ID;
+        GameObject SPAWN = null;
 
-    //        BoardManager.Instance.SetInGameUI(this.transform.parent.GetComponent<RectTransform>().anchoredPosition,
-    //            () =>
-    //            {
-    //                BoardManager.Instance.CalculateMove(_current, this, PhotonNetwork.LocalPlayer, BoardManager.ActionType.Move);
-    //            },
-    //            () =>
-    //            {
-    //                BoardManager.Instance.CalculateAttack(_current, this, PhotonNetwork.LocalPlayer, BoardManager.ActionType.Attack);
-    //            },
-    //            () =>
-    //            {
-    //                BoardManager.Instance.CalculateAbiltiy(_current, this, PhotonNetwork.LocalPlayer, BoardManager.ActionType.Attack);
-    //            }, AttackUsed, MoveUsed, character_controller.characterProps, LIMIT_SPECIAL);
-    //    }
-    //}
+        CharacterObject characterProps = GameObject.FindGameObjectsWithTag("CharacterResource")[0].GetComponent<CharacterResource>().FindCharacterWithID(id);
+        this.GetComponent<Image>().sprite = characterProps.Character_Sprite;
+        if (IsServer)
+        {
+            if (networkObject.IsOwner)
+            {
+                Debug.LogError("Server: Reparenting character to self_spawn for client id: " + OwnerClientId + ", character id is: " + id + ", spawnIndex is: " + index + ", index is: " + index);
+                this.transform.SetParent(selfSpawn[index]);
+                SPAWN = selfSpawn[index].gameObject;
+                selfSpawn[index].gameObject.name = characterProps.Name;
+            }
+
+            else
+            {
+                Debug.LogError("Server: Reparenting character to enemy_spawn for client id: " + OwnerClientId + ", character id is: " + id + ", spawnIndex is: " + index + ", index is: " + index);
+                this.transform.SetParent(enemySpawn[index]);
+                SPAWN = enemySpawn[index].gameObject;
+                enemySpawn[index].gameObject.name = characterProps.Name;
+            }
+            this.GetComponent<RectTransform>().anchoredPosition = Vector2.zero;
+        }
+
+        else
+        {
+            StartCoroutine(SetAnchoredPositionCoroutine());
+        }
+
+        if (BoardManager.instance.players.Count != 2)
+        {
+            BoardManager.instance.players.Clear();
+            BoardManager.instance.players = FindObjectsOfType<PlayerController>().ToList();
+
+            foreach (var item in BoardManager.instance.players)
+            {
+                if (item.networkObject == null)
+                {
+                    item.networkObject = item.GetComponent<NetworkObject>();
+                }
+            }
+        }
+
+        if (networkObject.IsOwner)
+        {
+            BLOCK_ID = selfSpawn[index].gameObject.GetComponent<PlayerLocation>().PlayerCurrentBlock;
+            foreach (var p in BoardManager.instance.players)
+            {
+                if (p.networkObject.IsOwner)
+                {
+                    playerController = p;
+                }
+            }
+        }
+
+        else
+        {
+            BLOCK_ID = enemySpawn[index].gameObject.GetComponent<PlayerLocation>().PlayerCurrentBlock;
+            foreach (var p in BoardManager.instance.players)
+            {
+                if (!p.networkObject.IsOwner)
+                {
+                    playerController = p;
+                }
+            }
+        }
+
+        if (playerController != null)
+        {
+            characterController = playerController.characters[index];
+            // character_controller.myPlayerController = player_controller;
+            characterController.blockID = BLOCK_ID;
+            characterController.body = this.gameObject;
+        }
+    }
+    public IEnumerator SetAnchoredPositionCoroutine()
+    {
+        yield return new WaitForSeconds(1f);
+
+        var rectTransform = this.GetComponent<RectTransform>();
+        if (rectTransform != null)
+        {
+            rectTransform.anchoredPosition = Vector2.zero;
+        }
+    }
+
+    public void OnActionTaken()
+    {
+        if (!IsOwner) return;
+
+        if (BoardManager.instance.endTurnButton.GetComponent<NetworkObject>().IsOwner)
+        {
+            var _current = BoardManager.instance.FindLocation(characterController.blockID);
+
+            BoardManager.instance.SetInGameUI(
+                this.transform.parent.GetComponent<RectTransform>().anchoredPosition,
+                () => BoardManager.instance.CalculateMove(_current, this, NetworkManager.Singleton.LocalClientId, BoardManager.ActionType.Move),
+                () => BoardManager.instance.CalculateAttack(_current, this, NetworkManager.Singleton.LocalClientId, BoardManager.ActionType.Attack),
+                isAttackUsed, isMoveUsed, characterController.characterObj);
+        }
+    }
+
     //public void Move(BlockID ID)
     //{
     //    if (!pv.IsMine)
@@ -143,97 +229,4 @@ public class CharacterNetworked : NetworkBehaviour
     //    GameObject.Destroy(this.gameObject);
     //}
 
-    [ClientRpc]
-    public void InitCharacterClientRpc(int id, int index)
-    {
-        InitCharacter(id, index);
-    }
-
-    public void InitCharacter(int id, int index)
-    {
-        BlockID BLOCK_ID;
-        GameObject SPAWN = null;
-
-        CharacterObject characterProps = GameObject.FindGameObjectsWithTag("CharacterResource")[0].GetComponent<CharacterResource>().FindCharacterWithID(id);
-        this.GetComponent<Image>().sprite = characterProps.Character_Sprite;
-        if (IsServer)
-        {
-            if (networkObject.IsOwner)
-            {
-                Debug.LogError("Server: Reparenting character to self_spawn for client id: " + OwnerClientId + ", character id is: " + id + ", spawnIndex is: " + index + ", index is: " + index);
-                this.transform.SetParent(self_spawn[index]);
-                SPAWN = self_spawn[index].gameObject;
-                self_spawn[index].gameObject.name = characterProps.Name;
-            }
-
-            else
-            {
-                Debug.LogError("Server: Reparenting character to enemy_spawn for client id: " + OwnerClientId + ", character id is: " + id + ", spawnIndex is: " + index + ", index is: " + index);
-                this.transform.SetParent(enemy_spawn[index]);
-                SPAWN = enemy_spawn[index].gameObject;
-                enemy_spawn[index].gameObject.name = characterProps.Name;
-            }
-            this.GetComponent<RectTransform>().anchoredPosition = Vector2.zero;
-        }
-
-        else
-        {
-            StartCoroutine(SetAnchoredPositionCoroutine());
-        }
-
-        if (BoardManager.instance.players.Count != 2)
-        {
-            BoardManager.instance.players.Clear();
-            BoardManager.instance.players = FindObjectsOfType<PlayerController>().ToList();
-
-            foreach (var item in BoardManager.instance.players)
-            {
-                if (item.networkObject == null)
-                {
-                    item.networkObject = item.GetComponent<NetworkObject>();
-                }
-            }
-        }
-
-        if (networkObject.IsOwner)
-        {
-            BLOCK_ID = self_spawn[index].gameObject.GetComponent<PlayerLocation>().PlayerCurrentBlock;
-            foreach (var p in BoardManager.instance.players)
-            {
-                if (p.networkObject.IsOwner)
-                {
-                    player_controller = p;
-                }
-            }
-        }
-
-        else
-        {
-            BLOCK_ID = enemy_spawn[index].gameObject.GetComponent<PlayerLocation>().PlayerCurrentBlock;
-            foreach (var p in BoardManager.instance.players)
-            {
-                if (!p.networkObject.IsOwner)
-                {
-                    player_controller = p;
-                }
-            }
-        }
-
-        if (player_controller != null)
-        {
-            character_controller = player_controller.characters[index];
-            character_controller.blockID = BLOCK_ID;
-            character_controller.body = this.gameObject;
-        }
-    }
-    public IEnumerator SetAnchoredPositionCoroutine()
-    {
-        yield return new WaitForSeconds(1f);
-
-        var rectTransform = this.GetComponent<RectTransform>();
-        if (rectTransform != null)
-        {
-            rectTransform.anchoredPosition = Vector2.zero;
-        }
-    }
 }

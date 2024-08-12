@@ -70,6 +70,13 @@ public class TurnManager : NetworkBehaviour
         {
             ulong newOwnerId = currentTurnPlayer.Value;
             BoardManager.instance.endTurnButton.GetComponent<NetworkObject>().ChangeOwnership(newOwnerId);
+            foreach (var row in BoardManager.instance.Board)
+            {
+                foreach (var col in row)
+                {
+                    col.GetComponent<NetworkObject>().ChangeOwnership(newOwnerId);
+                }
+            }
         }
     }
 

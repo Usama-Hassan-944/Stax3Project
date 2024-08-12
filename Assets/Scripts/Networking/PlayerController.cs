@@ -43,7 +43,7 @@ public class PlayerController : NetworkBehaviour
             }
         }
 
-        InitPlayerCharacters();
+        StartCoroutine(InitPlayerCharacters());
     }
 
     public override void OnNetworkSpawn()
@@ -57,16 +57,17 @@ public class PlayerController : NetworkBehaviour
         playerName.text = userName.Value;
     }
     
-    public void InitPlayerCharacters()
+    public IEnumerator InitPlayerCharacters()
     {
-        Debug.LogError("InitPlayerCharacters  is called");
+        yield return new WaitForSeconds(0.25f);
         InitCharacter(0, 0);
+        yield return new WaitForSeconds(0.25f);
         InitCharacter(1, 1);
     }
 
     void InitCharacter(int ID, int index)
     {
-        characters[index].Init(ID, index);
+        characters[index].Init(this, ID, index);
     }
 
     //    public void CheckGameEnd()

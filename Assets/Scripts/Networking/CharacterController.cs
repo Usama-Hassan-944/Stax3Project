@@ -20,7 +20,7 @@ public class CharacterController : NetworkBehaviour
     public Slider attackSlider;
 
     private Transform spawnPoint;
-    public CharacterObject characterProps;
+    public CharacterObject characterObj;
     public CharacterResource resource;
     public GameObject body;
     private int id;
@@ -42,7 +42,7 @@ public class CharacterController : NetworkBehaviour
 
     }
 
-    public void Init(int id, int index)
+    public void Init(PlayerController playerController, int id, int index)
     {
         if (resource == null)
         {
@@ -52,41 +52,49 @@ public class CharacterController : NetworkBehaviour
         spawnPoint = GameObject.FindGameObjectWithTag("CharacterSpawn").GetComponent<Transform>();
 
         this.id = id;
-        characterProps = resource.FindCharacterWithID(id);
+        characterObj = resource.FindCharacterWithID(id);
 
-        name.text = characterProps.Name;
-        icon.sprite = characterProps.Character_Sprite;
+        name.text = characterObj.Name;
+        icon.sprite = characterObj.Character_Sprite;
 
-        if (BoardManager.instance.players.Count != 2)
+        myPlayerController = playerController;
+        //if (BoardManager.instance.players.Count != 2)
+        //{
+        //    BoardManager.instance.players.Clear();
+        //    BoardManager.instance.players = FindObjectsOfType<PlayerController>().ToList();
+
+        //    foreach (var item in BoardManager.instance.players)
+        //    {
+        //        if (item.networkObject == null)
+        //        {
+        //            item.networkObject = item.GetComponent<NetworkObject>();
+        //        }
+        //    }
+        //}
+
+        //foreach (var item in BoardManager.instance.players)
+        //{
+        //    if (item.networkObject.IsOwner && IsLocalPlayer)
+        //    {
+        //        myPlayerController = item;
+        //    }
+        //}
+
+        //if (myPlayerController != null)
+        //{
+        //    if (myPlayerController.networkObject.IsOwner)
+        //    {
+        //        Health.Value = characterObj.Health;
+        //        AttackPower.Value = characterObj.Attack_Power;
+        //        Defence.Value = characterObj.Defence;
+        //    }
+        //}
+
+        if (IsOwner)
         {
-            BoardManager.instance.players.Clear();
-            BoardManager.instance.players = FindObjectsOfType<PlayerController>().ToList();
-
-            foreach (var item in BoardManager.instance.players)
-            {
-                if (item.networkObject == null)
-                {
-                    item.networkObject = item.GetComponent<NetworkObject>();
-                }
-            }
-        }
-
-        foreach (var item in BoardManager.instance.players)
-        {
-            if (item.networkObject.IsOwner)
-            {
-                myPlayerController = item;
-            }
-        }
-
-        if (myPlayerController != null)
-        {
-            if (myPlayerController.networkObject.IsOwner)
-            {
-                Health.Value = characterProps.Health;
-                AttackPower.Value = characterProps.Attack_Power;
-                Defence.Value = characterProps.Defence;
-            }
+            Health.Value = characterObj.Health;
+            AttackPower.Value = characterObj.Attack_Power;
+            Defence.Value = characterObj.Defence;
         }
 
         StartCoroutine(SpawnBody(index));

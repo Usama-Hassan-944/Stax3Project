@@ -3,69 +3,54 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using Unity.Netcode;
 
-public class CubeSyncer : MonoBehaviour
+public class CubeSyncer : NetworkBehaviour
 {
-    public GameObject Red_Glow;
-    public GameObject Golden_Glow;
-
-    private bool glowGolden = false;
-    private bool glowRed = false;
-
-    [Header("Block ID")]
+    public GameObject redGlow;
+    public GameObject goldenGlow;
     public BlockID ID;
-    // public PhotonView pv;
     public UnityAction action;
 
-    void Start()
+    private NetworkVariable<bool> glowGolden = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    private NetworkVariable<bool> glowRed = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
+    private void Start()
     {
-        // pv = GetComponent<PhotonView>();
+        UpdateGlowState();
     }
 
-    //void IPunObservable.OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
-    //{
-    //    if(stream.IsWriting)
-    //    {
-    //        stream.SendNext(glowGolden);
-    //        stream.SendNext(glowRed);
-    //    }
-    //    if(stream.IsReading)
-    //    {
-    //        SetGolden((bool)stream.ReceiveNext());
-    //        SetRed((bool)stream.ReceiveNext());
-    //    }
-    //}
+    private void UpdateGlowState()
+    {
+        goldenGlow.SetActive(glowGolden.Value);
+        redGlow.SetActive(glowRed.Value);
+    }
 
-    public void SetGolden(bool status/*, Player player = null*/)
+    public void SetGolden(bool status)
     {
-        //if (player != null && !pv.IsMine)
-        //{
-        //    this.TransferOwnerShip(player);
-        //}
-        //glowGolden = status;
-        //    Golden_Glow.SetActive(glowGolden);
-        
+        if (IsOwner)
+        {
+            glowGolden.Value = status;
+        }
     }
-    public void SetRed(bool status/*, Player player = null*/)
+
+    public void SetRed(bool status)
     {
-        //if(player != null && !pv.IsMine)
-        //{
-        //    this.TransferOwnerShip(player);
-        //}
-        //    glowRed = status;
-        //    Red_Glow.SetActive(glowRed);   
+        if (IsOwner)
+        {
+            glowRed.Value = status;
+        }
     }
-   
-    public void TransferOwnerShip(/*Player player*/)
-    {
-        // pv.TransferOwnership(player);
-    }
+
     public void OnActionTaken()
     {
-        if(action != null)
+        if (action != null)
+        {
             action();
+        }
     }
 }
+
 [Serializable]
 public enum BlockID
 {
@@ -76,5 +61,5 @@ public enum BlockID
     E1, E2, E3, E4, E5, E6, E7, E8,
     F1, F2, F3, F4, F5, F6, F7, F8,
     G1, G2, G3, G4, G5, G6, G7, G8,
-    H1, H2, H3, H4, H5, H6, H7, H8, none
+    H1, H2, H3, H4, H5, H6, H7, H8,
 }
