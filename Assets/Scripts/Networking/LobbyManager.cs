@@ -14,6 +14,7 @@ using Unity.VisualScripting;
 using static UnityEditor.Progress;
 using Unity.Netcode;
 using UnityEngine.SceneManagement;
+using System.Threading.Tasks;
 
 namespace sy.Networking
 {
@@ -23,6 +24,7 @@ namespace sy.Networking
 
         public static LobbyManager instance;
         public MultiplayerUIManager multiplayerUIManager;
+        public NetworkManager networkManager;
         public TestRelay testRelay;
         private Action UpdateLobby;
         public Lobby joinedLobby;
@@ -94,6 +96,7 @@ namespace sy.Networking
                     {
                         if (!IsHostOfLobby())
                         {
+                            LobbyUI.instance.Clear();
                             testRelay.JoinRelay(joinedLobby.Data["RelayJoinCode"].Value);
                         }
                         joinedLobby = null;
@@ -329,10 +332,10 @@ namespace sy.Networking
                     };
 
                     Lobby lobby = await LobbyService.Instance.UpdateLobbyAsync(joinedLobby.Id, options);
-                    joinedLobby = lobby;
-
+                    joinedLobby = null;
+                    LobbyUI.instance.Clear();
                     NetworkManager.Singleton.StartHost();
-                    SceneManager.LoadScene("Gameplay");
+                    networkManager.SceneManager.LoadScene("Gameplay", LoadSceneMode.Single);
                 }
 
                 catch (LobbyServiceException e)

@@ -11,7 +11,6 @@ using UnityEngine.SceneManagement;
 
 namespace sy.Networking
 {
-
     public class TestRelay : MonoBehaviour
     {
         public async Task<string> CreateRelay()
@@ -43,8 +42,9 @@ namespace sy.Networking
                 NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(relayServerData);
                 NetworkManager.Singleton.StartClient();
                 await WaitForClientConnection();
-                SceneManager.LoadScene("Gameplay");
+                SceneManager.LoadScene("Gameplay", LoadSceneMode.Single);
             }
+
             catch (RelayServiceException e)
             {
                 Debug.Log(e);
