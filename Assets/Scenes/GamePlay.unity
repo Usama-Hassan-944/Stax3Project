@@ -6094,10 +6094,13 @@ MonoBehaviour:
   - {fileID: 1102496335}
   - {fileID: 1308023037}
   players: []
+  activeSyncers: []
   inGameUI: {fileID: 1376504482}
   gameMoves:
   - {fileID: 223902337}
   - {fileID: 1728394309}
+  winUI: {fileID: 430414119}
+  status: {fileID: 352567031}
 --- !u!114 &288922508
 MonoBehaviour:
   m_ObjectHideFlags: 0

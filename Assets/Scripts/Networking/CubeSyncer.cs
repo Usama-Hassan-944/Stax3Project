@@ -22,20 +22,26 @@ public class CubeSyncer : NetworkBehaviour
 
     private void UpdateGlowState()
     {
+        Debug.LogError("My Cube id is: " + ID.ToString());
+        Debug.Log($"Updating glow state. Golden: {glowGolden.Value}");
         goldenGlow.SetActive(glowGolden.Value);
         redGlow.SetActive(glowRed.Value);
     }
 
     public void SetGolden(bool status)
     {
+        Debug.Log($"SetGolden called");
         if (IsOwner)
         {
+            Debug.Log($"SetGolden called. New status: {status}");
             glowGolden.Value = status;
+            UpdateGlowState();
         }
     }
 
     public void SetRed(bool status)
     {
+        Debug.Log($"SetRed called");
         if (IsOwner)
         {
             glowRed.Value = status;

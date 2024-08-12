@@ -58,37 +58,6 @@ public class CharacterController : NetworkBehaviour
         icon.sprite = characterObj.Character_Sprite;
 
         myPlayerController = playerController;
-        //if (BoardManager.instance.players.Count != 2)
-        //{
-        //    BoardManager.instance.players.Clear();
-        //    BoardManager.instance.players = FindObjectsOfType<PlayerController>().ToList();
-
-        //    foreach (var item in BoardManager.instance.players)
-        //    {
-        //        if (item.networkObject == null)
-        //        {
-        //            item.networkObject = item.GetComponent<NetworkObject>();
-        //        }
-        //    }
-        //}
-
-        //foreach (var item in BoardManager.instance.players)
-        //{
-        //    if (item.networkObject.IsOwner && IsLocalPlayer)
-        //    {
-        //        myPlayerController = item;
-        //    }
-        //}
-
-        //if (myPlayerController != null)
-        //{
-        //    if (myPlayerController.networkObject.IsOwner)
-        //    {
-        //        Health.Value = characterObj.Health;
-        //        AttackPower.Value = characterObj.Attack_Power;
-        //        Defence.Value = characterObj.Defence;
-        //    }
-        //}
 
         if (IsOwner)
         {

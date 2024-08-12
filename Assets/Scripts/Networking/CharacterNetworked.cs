@@ -5,6 +5,7 @@ using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
+using static Unity.Collections.AllocatorManager;
 
 public class CharacterNetworked : NetworkBehaviour
 {
@@ -19,6 +20,7 @@ public class CharacterNetworked : NetworkBehaviour
     public GameObject specialVFX;
     public bool isAttackUsed;
     public bool isMoveUsed;
+    public BlockID blockId;
     public NetworkObject networkObject;
 
     //private void OnEnable()
@@ -81,7 +83,6 @@ public class CharacterNetworked : NetworkBehaviour
 
     public void InitCharacter(int id, int index)
     {
-        BlockID BLOCK_ID;
         GameObject SPAWN = null;
 
         CharacterObject characterProps = GameObject.FindGameObjectsWithTag("CharacterResource")[0].GetComponent<CharacterResource>().FindCharacterWithID(id);
@@ -90,73 +91,128 @@ public class CharacterNetworked : NetworkBehaviour
         {
             if (networkObject.IsOwner)
             {
-                Debug.LogError("Server: Reparenting character to self_spawn for client id: " + OwnerClientId + ", character id is: " + id + ", spawnIndex is: " + index + ", index is: " + index);
                 this.transform.SetParent(selfSpawn[index]);
                 SPAWN = selfSpawn[index].gameObject;
+                blockId = selfSpawn[index].gameObject.GetComponent<PlayerLocation>().PlayerCurrentBlock;
                 selfSpawn[index].gameObject.name = characterProps.Name;
             }
 
             else
             {
-                Debug.LogError("Server: Reparenting character to enemy_spawn for client id: " + OwnerClientId + ", character id is: " + id + ", spawnIndex is: " + index + ", index is: " + index);
                 this.transform.SetParent(enemySpawn[index]);
                 SPAWN = enemySpawn[index].gameObject;
+                blockId = enemySpawn[index].gameObject.GetComponent<PlayerLocation>().PlayerCurrentBlock;
                 enemySpawn[index].gameObject.name = characterProps.Name;
+            }
+
+            if (BoardManager.instance.players.Count != 2)
+            {
+                BoardManager.instance.players.Clear();
+                BoardManager.instance.players = FindObjectsOfType<PlayerController>().ToList();
+
+                foreach (var item in BoardManager.instance.players)
+                {
+                    if (item.networkObject == null)
+                    {
+                        item.networkObject = item.GetComponent<NetworkObject>();
+                    }
+                }
+            }
+
+            if (networkObject.IsOwner)
+            {
+                foreach (var p in BoardManager.instance.players)
+                {
+                    if (p.networkObject.IsOwner)
+                    {
+                        playerController = p;
+                    }
+                }
+            }
+
+            else
+            {
+                foreach (var p in BoardManager.instance.players)
+                {
+                    if (!p.networkObject.IsOwner)
+                    {
+                        playerController = p;
+                    }
+                }
+            }
+
+            if (playerController != null)
+            {
+                characterController = playerController.characters[index];
+                characterController.blockID = blockId;
+                // character_controller.myPlayerController = player_controller;
+                characterController.body = this.gameObject;
             }
             this.GetComponent<RectTransform>().anchoredPosition = Vector2.zero;
         }
 
         else
         {
+            if (networkObject.IsOwner)
+            {
+                blockId = enemySpawn[index].gameObject.GetComponent<PlayerLocation>().PlayerCurrentBlock;
+                SPAWN = enemySpawn[index].gameObject;
+            }
+
+            else
+            {
+                blockId = selfSpawn[index].gameObject.GetComponent<PlayerLocation>().PlayerCurrentBlock;
+                SPAWN = selfSpawn[index].gameObject;
+            }
+
+            if (BoardManager.instance.players.Count != 2)
+            {
+                BoardManager.instance.players.Clear();
+                BoardManager.instance.players = FindObjectsOfType<PlayerController>().ToList();
+
+                foreach (var item in BoardManager.instance.players)
+                {
+                    if (item.networkObject == null)
+                    {
+                        item.networkObject = item.GetComponent<NetworkObject>();
+                    }
+                }
+            }
+
+            if (networkObject.IsOwner)
+            {
+                foreach (var p in BoardManager.instance.players)
+                {
+                    if (p.networkObject.IsOwner)
+                    {
+                        playerController = p;
+                    }
+                }
+            }
+
+            else
+            {
+                foreach (var p in BoardManager.instance.players)
+                {
+                    if (!p.networkObject.IsOwner)
+                    {
+                        playerController = p;
+                    }
+                }
+            }
+
+            if (playerController != null)
+            {
+                characterController = playerController.characters[index];
+                characterController.blockID = blockId;
+                // character_controller.myPlayerController = player_controller;
+                characterController.body = this.gameObject;
+            }
+
             StartCoroutine(SetAnchoredPositionCoroutine());
         }
-
-        if (BoardManager.instance.players.Count != 2)
-        {
-            BoardManager.instance.players.Clear();
-            BoardManager.instance.players = FindObjectsOfType<PlayerController>().ToList();
-
-            foreach (var item in BoardManager.instance.players)
-            {
-                if (item.networkObject == null)
-                {
-                    item.networkObject = item.GetComponent<NetworkObject>();
-                }
-            }
-        }
-
-        if (networkObject.IsOwner)
-        {
-            BLOCK_ID = selfSpawn[index].gameObject.GetComponent<PlayerLocation>().PlayerCurrentBlock;
-            foreach (var p in BoardManager.instance.players)
-            {
-                if (p.networkObject.IsOwner)
-                {
-                    playerController = p;
-                }
-            }
-        }
-
-        else
-        {
-            BLOCK_ID = enemySpawn[index].gameObject.GetComponent<PlayerLocation>().PlayerCurrentBlock;
-            foreach (var p in BoardManager.instance.players)
-            {
-                if (!p.networkObject.IsOwner)
-                {
-                    playerController = p;
-                }
-            }
-        }
-
-        if (playerController != null)
-        {
-            characterController = playerController.characters[index];
-            // character_controller.myPlayerController = player_controller;
-            characterController.blockID = BLOCK_ID;
-            characterController.body = this.gameObject;
-        }
     }
+
     public IEnumerator SetAnchoredPositionCoroutine()
     {
         yield return new WaitForSeconds(1f);
