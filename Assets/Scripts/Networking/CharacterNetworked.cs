@@ -180,11 +180,19 @@ public class CharacterNetworked : NetworkBehaviour
         {
             StartCoroutine(SetAnchoredPositionCoroutine());
         }
-        
+
         if (BoardManager.instance.players.Count != 2)
         {
             BoardManager.instance.players.Clear();
             BoardManager.instance.players = FindObjectsOfType<PlayerController>().ToList();
+
+            foreach (var item in BoardManager.instance.players)
+            {
+                if (item.networkObject == null)
+                {
+                    item.networkObject = item.GetComponent<NetworkObject>();
+                }
+            }
         }
 
         if (networkObject.IsOwner)
@@ -211,9 +219,12 @@ public class CharacterNetworked : NetworkBehaviour
             }
         }
 
-        character_controller = player_controller.characters[index];
-        character_controller.blockID = BLOCK_ID;
-        character_controller.body = this.gameObject;
+        if (player_controller != null)
+        {
+            character_controller = player_controller.characters[index];
+            character_controller.blockID = BLOCK_ID;
+            character_controller.body = this.gameObject;
+        }
     }
     public IEnumerator SetAnchoredPositionCoroutine()
     {

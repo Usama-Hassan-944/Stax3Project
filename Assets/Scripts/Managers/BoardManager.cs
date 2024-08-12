@@ -10,9 +10,7 @@ using UnityEngine.UI;
 public class BoardManager : MonoBehaviour
 {
     public GameObject playerPrefab;
-    public Transform playerContent;
-    //    public PhotonView pv;
-    //    public GameObject EndTurn;
+    public GameObject endTurnButton;
 
     [Header("Board Rows")]
     public List<GameObject> R1;
@@ -58,6 +56,10 @@ public class BoardManager : MonoBehaviour
         //    player.GetComponent<NetworkObject>().Spawn();
         //}
         PopulateBoard();
+    }
+    private void Update()
+    {
+        endTurnButton.GetComponent<Button>().interactable = endTurnButton.GetComponent<NetworkObject>().IsOwner;
     }
 
     //    public void ResetAbilityData()
@@ -119,10 +121,7 @@ public class BoardManager : MonoBehaviour
     //        Invoke(nameof(DisableHud),2.5f);
     //    }
 
-    //    private void Update()
-    //    {
-    //        EndTurn.GetComponent<Button>().interactable = EndTurn.GetComponent<PhotonView>().IsMine;
-    //    }
+
     //    void DisableHud()
     //    {
     //        InGameUI.SetActive(false);

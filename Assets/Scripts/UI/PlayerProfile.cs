@@ -12,9 +12,8 @@ namespace sy.Profile
         #region Fields
 
         public TMPro.TMP_InputField nicknameInput;
-        public GameObject ProfilePanel;
+        public GameObject profilePanel;
         public GameObject userNamePanel;
-        public GameObject RulesPanel;
 
         #endregion
 
@@ -22,20 +21,14 @@ namespace sy.Profile
 
         public void onProfileMenu()
         {
-            ProfilePanel.SetActive(true);
+            profilePanel.SetActive(true);
         }
+
         public void ExitProfile()
         {
-            ProfilePanel.SetActive(false);
+            profilePanel.SetActive(false);
         }
-        public void onRules()
-        {
-            RulesPanel.SetActive(true);
-        }
-        public void ExitRules()
-        {
-            RulesPanel.SetActive(false);
-        }
+
         public void onUserDetailsChanged()
         {
             ClientInfo.Username = nicknameInput.text;

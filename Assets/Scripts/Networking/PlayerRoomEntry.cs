@@ -13,6 +13,7 @@ public class PlayerRoomEntry : MonoBehaviour
     public Text playerNameText;
     public Button playerReadyButton;
     public GameObject playerReadyImage;
+    public string id;
 
     private int ownerId;
     private bool isPlayerReady = false;
@@ -38,6 +39,7 @@ public class PlayerRoomEntry : MonoBehaviour
 
     public void UpdateEntry(Player player)
     {
+        id = player.Id;
         playerNameText.text = player.Data["PlayerName"].Value;
         if (player.Data["Status"].Value == "0")
         {

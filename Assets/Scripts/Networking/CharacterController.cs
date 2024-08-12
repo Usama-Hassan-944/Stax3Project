@@ -5,6 +5,7 @@ using TMPro;
 using UnityEngine.UI;
 using sy.Data;
 using Unity.Netcode;
+using System.Linq;
 
 public class CharacterController : NetworkBehaviour
 {
@@ -28,9 +29,9 @@ public class CharacterController : NetworkBehaviour
     public bool hasSpawnedCharacters = false;
 
     [Header("Networked")]
-    public NetworkVariable<int> Health = new NetworkVariable<int>();
-    public NetworkVariable<int> AttackPower = new NetworkVariable<int>();
-    public NetworkVariable<int> Defence = new NetworkVariable<int>();
+    public NetworkVariable<int> Health = new NetworkVariable<int>(0, writePerm: NetworkVariableWritePermission.Owner, readPerm: NetworkVariableReadPermission.Everyone);
+    public NetworkVariable<int> AttackPower = new NetworkVariable<int>(0, writePerm: NetworkVariableWritePermission.Owner, readPerm: NetworkVariableReadPermission.Everyone);
+    public NetworkVariable<int> Defence = new NetworkVariable<int>(0, writePerm: NetworkVariableWritePermission.Owner, readPerm: NetworkVariableReadPermission.Everyone);
 
 
     public override void OnNetworkSpawn()
@@ -41,7 +42,7 @@ public class CharacterController : NetworkBehaviour
 
     }
 
-    public void Init(PlayerController playerController, int id, int index)
+    public void Init(int id, int index)
     {
         if (resource == null)
         {
@@ -50,21 +51,50 @@ public class CharacterController : NetworkBehaviour
         }
         spawnPoint = GameObject.FindGameObjectWithTag("CharacterSpawn").GetComponent<Transform>();
 
-        this.myPlayerController = playerController;
         this.id = id;
         characterProps = resource.FindCharacterWithID(id);
 
         name.text = characterProps.Name;
         icon.sprite = characterProps.Character_Sprite;
 
-        Health.Value = characterProps.Health;
-        AttackPower.Value = characterProps.Attack_Power;
-        Defence.Value = characterProps.Defence;
+        if (BoardManager.instance.players.Count != 2)
+        {
+            BoardManager.instance.players.Clear();
+            BoardManager.instance.players = FindObjectsOfType<PlayerController>().ToList();
+
+            foreach (var item in BoardManager.instance.players)
+            {
+                if (item.networkObject == null)
+                {
+                    item.networkObject = item.GetComponent<NetworkObject>();
+                }
+            }
+        }
+
+        foreach (var item in BoardManager.instance.players)
+        {
+            if (item.networkObject.IsOwner)
+            {
+                myPlayerController = item;
+            }
+        }
+
+        if (myPlayerController != null)
+        {
+            if (myPlayerController.networkObject.IsOwner)
+            {
+                Health.Value = characterProps.Health;
+                AttackPower.Value = characterProps.Attack_Power;
+                Defence.Value = characterProps.Defence;
+            }
+        }
+
         StartCoroutine(SpawnBody(index));
     }
 
     public IEnumerator SpawnBody(int index)
     {
+        yield return new WaitForSeconds(1f);
         if (NetworkManager.Singleton.IsServer && !hasSpawnedCharacters)
         {
             GameObject character = Instantiate(BoardManager.instance.playerPrefab, spawnPoint.position, Quaternion.identity);

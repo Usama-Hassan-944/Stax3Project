@@ -87,8 +87,8 @@ namespace sy.Networking
                 lobbyUpdateTimer -= Time.deltaTime;
                 if (lobbyUpdateTimer < 0f)
                 {
-                    float lobbyPollTimerMax = 1.1f;
-                    lobbyUpdateTimer = lobbyPollTimerMax;
+                    float lobbyTimerMax = 1.5f;
+                    lobbyUpdateTimer = lobbyTimerMax;
                     joinedLobby = await LobbyService.Instance.GetLobbyAsync(joinedLobby.Id);
                     LobbyUI.instance.UpdateLobby(joinedLobby);
 

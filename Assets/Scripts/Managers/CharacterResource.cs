@@ -11,11 +11,11 @@ namespace sy.Data
             DontDestroyOnLoad(this);
         }
 
-        public List<CharacterObject> characterObjectsLevel1;
+        public List<CharacterObject> characterObjects;
 
         public CharacterObject FindCharacterWithID(int ID)
         {
-            foreach (CharacterObject character in characterObjectsLevel1)
+            foreach (CharacterObject character in characterObjects)
             {
                 if (character.ID == ID)
                 {

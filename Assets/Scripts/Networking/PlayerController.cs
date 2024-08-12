@@ -66,7 +66,7 @@ public class PlayerController : NetworkBehaviour
 
     void InitCharacter(int ID, int index)
     {
-        characters[index].Init(this, ID, index);
+        characters[index].Init(ID, index);
     }
 
     //    public void CheckGameEnd()

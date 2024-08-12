@@ -6000,7 +6000,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerPrefab: {fileID: 671916111944072648, guid: fef42ab099ff92540a60183584362c2a, type: 3}
-  playerContent: {fileID: 0}
+  endTurnButton: {fileID: 433437536}
   R1:
   - {fileID: 1838701014}
   - {fileID: 872303741}
@@ -6491,8 +6491,8 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 433437542}
-        m_TargetAssemblyTypeName: Timmer, Assembly-CSharp
-        m_MethodName: OnEndTurn
+        m_TargetAssemblyTypeName: Timer, Assembly-CSharp
+        m_MethodName: OnEndTurnButtonClicked
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -6549,20 +6549,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 433437536}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aa584fbee541324448dd18d8409c7a41, type: 3}
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ObservedComponentsFoldoutOpen: 1
-  Group: 0
-  prefixField: -1
-  Synchronization: 3
-  OwnershipTransfer: 1
-  observableSearch: 0
-  ObservedComponents:
-  - {fileID: 433437542}
-  sceneViewId: 66
-  InstantiationId: 0
-  isRuntimeInstantiated: 0
+  GlobalObjectIdHash: 1083156629
+  AlwaysReplicateAsRoot: 0
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
 --- !u!114 &433437542
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6575,8 +6568,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 05b793daa18beff45adeba8e6968bda0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  pv: {fileID: 433437541}
-  Timetext: {fileID: 989048270}
+  timeText: {fileID: 989048270}
 --- !u!1001 &455992749
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -22669,6 +22661,71 @@ MonoBehaviour:
   AlwaysReplicateAsRoot: 0
   DontDestroyWithOwner: 0
   AutoObjectParentSync: 1
+--- !u!1 &1430138313
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1430138316}
+  - component: {fileID: 1430138315}
+  - component: {fileID: 1430138314}
+  m_Layer: 0
+  m_Name: TurnManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1430138314
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1430138313}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  GlobalObjectIdHash: 2529229004
+  AlwaysReplicateAsRoot: 0
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+--- !u!114 &1430138315
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1430138313}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81a5beb8e9e67a941af827b196d1f4d9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  turnDuration: 95
+  currentTurnTime: 0
+  currentTurnPlayer:
+    m_InternalValue: 0
+--- !u!4 &1430138316
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1430138313}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 4
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1489768618
 GameObject:
   m_ObjectHideFlags: 0
