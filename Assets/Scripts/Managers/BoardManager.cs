@@ -30,11 +30,17 @@ public class BoardManager : MonoBehaviour
     public GameObject inGameUI;
     public List<GameObject> gameMoves;
     public GameObject winUI;
-    public TextMeshProUGUI status;
+    public TextMeshProUGUI statusText;
 
     [SerializeField] public List<List<GameObject>> Board;
-
+    public NetworkObject networkObject;
     public static BoardManager instance;
+
+    public enum ActionType
+    {
+        Move = 1,
+        Attack = 2,
+    }
 
     private void Awake()
     {
@@ -50,6 +56,10 @@ public class BoardManager : MonoBehaviour
         players = new List<PlayerController>();
         activeSyncers = new List<CubeSyncer>();
         PopulateBoard();
+        if (networkObject == null)
+        {
+            networkObject = GetComponent<NetworkObject>();
+        }
     }
 
     private void Update()
@@ -62,16 +72,6 @@ public class BoardManager : MonoBehaviour
             }
         }
     }
-
-    //    [PunRPC]
-    //    public void EndGame(Player p)
-    //    {
-    //        if (p.IsLocal)
-    //            status.text = "You Loose";
-    //        else
-    //            status.text = "You Win";
-    //        winUI.SetActive(true);
-    //    }
 
     private void PopulateBoard()
     {
@@ -109,16 +109,23 @@ public class BoardManager : MonoBehaviour
         inGameUI.SetActive(false);
     }
 
-    //public void ResetPlayerMovesData()
-    //{
-    //    foreach (var p in players)
-    //        foreach (var c in p.characters)
-    //            if (c.pv.IsMine)
-    //            {
-    //                c.body.GetComponent<CharacterNetworked>().isAttackUsed = false;
-    //                c.body.GetComponent<CharacterNetworked>().isMoveUsed = false;
-    //            }
-    //}
+    public void ResetPlayerMovesData()
+    {
+        foreach (var p in players)
+        {
+            foreach (var c in p.characters)
+            {
+                if (c != null && c.body != null)
+                {
+                    if (c.body.GetComponent<CharacterNetworked>().networkObject.IsOwner)
+                    {
+                        c.body.GetComponent<CharacterNetworked>().isAttackUsed = false;
+                        c.body.GetComponent<CharacterNetworked>().isMoveUsed = false;
+                    }
+                }
+            }
+        }
+    }
 
     public GameObject GetBlockWithID(BlockID ID)
     {
@@ -292,6 +299,7 @@ public class BoardManager : MonoBehaviour
                                 }
                             }
                         }
+
                         break;
                     }
 
@@ -341,6 +349,7 @@ public class BoardManager : MonoBehaviour
                                 ActivateSyncer(syncer, character, id, action);
                             }
                         }
+
                         break;
                     }
             }
@@ -380,160 +389,197 @@ public class BoardManager : MonoBehaviour
         switch (action)
         {
             case ActionType.Move:
-                //syncer.action = () => { character.Move(syncer.ID); ResetActiveSyncers(); character.MoveUsed = true; };
-                syncer.SetGolden(true);
-                break;
+                {
+                    syncer.action = () =>
+                    {
+                        character.Move(syncer.ID);
+                        ResetActiveSyncers();
+                        character.isMoveUsed = true;
+                    };
+                    syncer.SetGolden(true);
+                    break;
+                }
             case ActionType.Attack:
-                // syncer.action = () => { othercharacter.pv.RPC("CalculateDamage", RpcTarget.All, character.character_controller.characterProps.Attack_Power, false); ResetActiveSyncers(); character.AttackUsed = true; };
-                // syncer.SetRed(true, p);
-                break;
+                {
+                    othercharacter.body.GetComponent<CharacterNetworked>().mySprite.raycastTarget = false;
+                    othercharacter.body.GetComponent<CharacterNetworked>().mySprite.maskable = false;
+                    syncer.action = () => 
+                    {
+                        ulong targetUid = othercharacter.body.GetComponent<CharacterNetworked>().networkObject.NetworkObjectId;
+                        // othercharacter.CalculateDamage(character.characterController.characterObj.Attack_Power, targetUid);
+                        othercharacter.CalculateDamageServerRpc(character.characterController.characterObj.Attack_Power, targetUid);
+                        ResetActiveSyncers();
+                        character.isAttackUsed = true;
+                        othercharacter.body.GetComponent<CharacterNetworked>().mySprite.raycastTarget = true;
+                        othercharacter.body.GetComponent<CharacterNetworked>().mySprite.maskable = true;
+                    };
+
+                    syncer.SetRed(true);
+                    break;
+                }
         }
     }
 
     public void CalculateAttack(Vector2 location, CharacterNetworked character, ulong id, ActionType action)
-        {
-    //        int _row = (int)location.x;
-    //        int _col = (int)location.y;
-    //        int DEPTH = character.character_controller.characterProps.Attack_Range;
-    //        ResetActiveSyncers();
-
-    //        for (int i = 1; i <= DEPTH; i++)
-    //        {
-    //            switch (character.character_controller.characterProps.Attack)
-    //            {
-    //                case CharacterObject.AttackType.Omni_Directional:
-    //                    Vector2 fr = new Vector2((_row + i), (_col + DEPTH));
-    //                    Vector2 fl = new Vector2((_row + i), (_col - DEPTH));
-    //                    Vector2 dr = new Vector2((_row - i), (_col + DEPTH));
-    //                    Vector2 dl = new Vector2((_row - i), (_col - DEPTH));
-    //                    int l = _col - i;
-    //                    int r = _col + i;
-    //                    int f = _row + 1; 
-    //                    int b = _row - 1;
-
-    //                    // forward
-    //                    if (f < 8)
-    //                    {
-    //                        var syncer = Board[f][_col].GetComponent<CubeSyncer>();
-    //                        if (CheckPlayerAttackBlockValid(syncer.ID))
-    //                            ActivateSyncer(syncer, character, p, action, ReturnAttackedPlayer(syncer.ID));
-    //                    }
-
-    //                    // back 
-    //                    if (b >= 0)
-    //                    {
-    //                        var syncer = Board[b][_col].GetComponent<CubeSyncer>();
-    //                        if (CheckPlayerAttackBlockValid(syncer.ID))
-    //                            ActivateSyncer(syncer, character, p, action, ReturnAttackedPlayer(syncer.ID));
-    //                    }
-
-    //                    //left
-    //                    if (l >= 0)
-    //                    {
-    //                        var syncer = Board[_row][l].GetComponent<CubeSyncer>();
-    //                        if (CheckPlayerAttackBlockValid(syncer.ID))
-    //                            ActivateSyncer(syncer, character, p, action, ReturnAttackedPlayer(syncer.ID));
-
-    //                    }
-    //                    //right
-    //                    if (r < 8)
-    //                    {
-    //                        var syncer = Board[_row][r].GetComponent<CubeSyncer>();
-    //                        if (CheckPlayerAttackBlockValid(syncer.ID))
-    //                            ActivateSyncer(syncer, character, p, action, ReturnAttackedPlayer(syncer.ID));
-    //                    }
-
-    //                    // forward right
-    //                    if (fr.x < 8 && fr.y < 8)
-    //                    {
-    //                        for (int j = _col; j <= fr.y; j++)
-    //                        {
-    //                            var syncer = Board[(int)fr.x][j].GetComponent<CubeSyncer>();
-    //                            if (CheckPlayerAttackBlockValid(syncer.ID))
-    //                            ActivateSyncer(syncer, character, p, action, ReturnAttackedPlayer(syncer.ID));
-    //                        }
-    //                    }
-    //                    // forward left
-    //                    if (fl.x < 8 && fl.y >= 0)
-    //                    {
-    //                        for (int j = _col - 1; j >= fl.y; j--)
-    //                        {
-    //                            var syncer = Board[(int)fl.x][j].GetComponent<CubeSyncer>();
-    //                            if (CheckPlayerAttackBlockValid(syncer.ID))
-    //                            ActivateSyncer(syncer, character, p, action, ReturnAttackedPlayer(syncer.ID));
-
-    //                        }
-    //                    }
-    //                    // back right
-    //                    if (dr.x >= 0 && dr.y < 8)
-    //                    {
-    //                        for (int j = _col; j <= dr.y; j++)
-    //                        {
-    //                            var syncer = Board[(int)dr.x][j].GetComponent<CubeSyncer>();
-    //                            if (CheckPlayerAttackBlockValid(syncer.ID))
-    //                                ActivateSyncer(syncer, character, p, action,ReturnAttackedPlayer(syncer.ID));
-    //                        }
-    //                    }
-    //                    // down left
-    //                    if (dl.x >= 0 && dl.y >= 0)
-    //                    {
-    //                        for (int j = _col - 1; j >= dl.y; j--)
-    //                        {
-    //                            var syncer = Board[(int)dl.x][j].GetComponent<CubeSyncer>();
-    //                            if (CheckPlayerAttackBlockValid(syncer.ID))
-    //                                ActivateSyncer(syncer, character, p, action, ReturnAttackedPlayer(syncer.ID));
-    //                        }
-    //                    }
-    //                    break;
-    //                case CharacterObject.AttackType.None:
-    //                    return;
-
-    //            }
-
-    //        }
-
-
-        }
-
-    //    private void TrueDamage(BlockID ID, CharacterNetworked character)
-    //    {
-    //        var _temp = ReturnAttackedPlayer(ID);
-    //        _temp.pv.RPC("CalculateDamage", RpcTarget.All,character.character_controller.characterProps.Power ,true);
-    //        character.AttackUsed = true;
-    //    }
-
-   
-
-    public enum ActionType
     {
-        Move = 1,
-        Attack = 2
+        int _row = (int)location.x;
+        int _col = (int)location.y;
+        int loopTraversal = character.characterController.characterObj.Attack_Range;
+        ResetActiveSyncers();
+
+        for (int i = 1; i <= loopTraversal; i++)
+        {
+            switch (character.characterController.characterObj.Attack)
+            {
+                case CharacterObject.AttackType.Omni_Directional:
+                    {
+                        Vector2 fr = new Vector2((_row + i), (_col + loopTraversal));
+                        Vector2 fl = new Vector2((_row + i), (_col - loopTraversal));
+                        Vector2 dr = new Vector2((_row - i), (_col + loopTraversal));
+                        Vector2 dl = new Vector2((_row - i), (_col - loopTraversal));
+                        int l = _col - i;
+                        int r = _col + i;
+                        int f = _row + 1;
+                        int b = _row - 1;
+
+                        // forward
+                        if (f < 8)
+                        {
+                            var syncer = Board[f][_col].GetComponent<CubeSyncer>();
+                            if (CheckPlayerAttackBlockValid(syncer.ID))
+                            {
+                                ActivateSyncer(syncer, character, id, action, ReturnAttackedPlayer(syncer.ID));
+                            }
+                        }
+
+                        // back 
+                        if (b >= 0)
+                        {
+                            var syncer = Board[b][_col].GetComponent<CubeSyncer>();
+                            if (CheckPlayerAttackBlockValid(syncer.ID))
+                            {
+                                ActivateSyncer(syncer, character, id, action, ReturnAttackedPlayer(syncer.ID));
+                            }
+                        }
+
+                        //left
+                        if (l >= 0)
+                        {
+                            var syncer = Board[_row][l].GetComponent<CubeSyncer>();
+                            if (CheckPlayerAttackBlockValid(syncer.ID))
+                            {
+                                ActivateSyncer(syncer, character, id, action, ReturnAttackedPlayer(syncer.ID));
+                            }
+                        }
+
+                        //right
+                        if (r < 8)
+                        {
+                            var syncer = Board[_row][r].GetComponent<CubeSyncer>();
+                            if (CheckPlayerAttackBlockValid(syncer.ID))
+                            {
+                                ActivateSyncer(syncer, character, id, action, ReturnAttackedPlayer(syncer.ID));
+                            }
+                        }
+
+                        // forward right
+                        if (fr.x < 8 && fr.y < 8)
+                        {
+                            for (int j = _col; j <= fr.y; j++)
+                            {
+                                var syncer = Board[(int)fr.x][j].GetComponent<CubeSyncer>();
+                                if (CheckPlayerAttackBlockValid(syncer.ID))
+                                {
+                                    ActivateSyncer(syncer, character, id, action, ReturnAttackedPlayer(syncer.ID));
+                                }
+                            }
+                        }
+
+                        // forward left
+                        if (fl.x < 8 && fl.y >= 0)
+                        {
+                            for (int j = _col - 1; j >= fl.y; j--)
+                            {
+                                var syncer = Board[(int)fl.x][j].GetComponent<CubeSyncer>();
+                                if (CheckPlayerAttackBlockValid(syncer.ID))
+                                {
+                                    ActivateSyncer(syncer, character, id, action, ReturnAttackedPlayer(syncer.ID));
+                                }
+                            }
+                        }
+
+                        // back right
+                        if (dr.x >= 0 && dr.y < 8)
+                        {
+                            for (int j = _col; j <= dr.y; j++)
+                            {
+                                var syncer = Board[(int)dr.x][j].GetComponent<CubeSyncer>();
+                                if (CheckPlayerAttackBlockValid(syncer.ID))
+                                {
+                                    ActivateSyncer(syncer, character, id, action, ReturnAttackedPlayer(syncer.ID));
+                                }
+                            }
+                        }
+
+                        // down left
+                        if (dl.x >= 0 && dl.y >= 0)
+                        {
+                            for (int j = _col - 1; j >= dl.y; j--)
+                            {
+                                var syncer = Board[(int)dl.x][j].GetComponent<CubeSyncer>();
+                                if (CheckPlayerAttackBlockValid(syncer.ID))
+                                {
+                                    ActivateSyncer(syncer, character, id, action, ReturnAttackedPlayer(syncer.ID));
+                                }
+                            }
+                        }
+
+                        break;
+                    }
+
+                case CharacterObject.AttackType.None:
+                    {
+                        return;
+                    }
+            }
+        }
     }
 
+    private bool CheckPlayerAttackBlockValid(BlockID ID)
+    {
+        foreach (var p in players)
+        {
+            foreach (var c in p.characters)
+            {
+                if (c.blockID == ID && !c.body.GetComponent<CharacterNetworked>().networkObject.IsOwner)
+                {
+                    return true;
+                }
+            }
+        }
 
-    //    private bool CheckPlayerAttackBlockValid(BlockID ID)
-    //    {
-    //        foreach (var p in players)
-    //            foreach (var c in p.characters)
-    //                if (c.blockID == ID && !c.pv.IsMine)
-    //                    return true;
-    //        return false;
-    //    }
+        return false;
+    }
 
+    private CharacterController ReturnAttackedPlayer(BlockID ID)
+    {
+        foreach (var p in players)
+        {
+            foreach (var c in p.characters)
+            {
+                if (c.blockID == ID && !c.body.GetComponent<CharacterNetworked>().networkObject.IsOwner)
+                {
+                    return c;
+                }
+            }
+        }
 
+        return null;
+    }
 
-    //    private CharacterController ReturnAttackedPlayer(BlockID ID)
-    //    {
-    //        foreach (var p in players)
-    //            foreach (var c in p.characters)
-    //                if (c.blockID == ID && !c.pv.IsMine)
-    //                    return c;
-    //        return null;
-    //    }
-
-    //    public void OnHome()
-    //    {
-    //        PhotonNetwork.LeaveRoom(this);
-    //        SceneManager.LoadScene("Home");
-    //    }
+    public void SetWinPanel(string msg)
+    {
+        statusText.text = msg;
+        winUI.SetActive(true);
+    }
 }

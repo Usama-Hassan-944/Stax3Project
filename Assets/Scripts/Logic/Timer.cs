@@ -19,7 +19,7 @@ public class Timer : NetworkBehaviour
 
     public void OnEndTurnButtonClicked()
     {
-        // BoardManager.instance.ResetPlayerMovesData();
+        BoardManager.instance.ResetPlayerMovesData();
         BoardManager.instance.ResetActiveSyncers();
         if (TurnManager.instance.IsCurrentTurn())
         {

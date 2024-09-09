@@ -70,17 +70,32 @@ public class PlayerController : NetworkBehaviour
         characters[index].Init(this, ID, index);
     }
 
-    //    public void CheckGameEnd()
-    //    {
-    //        if (characters.Count <= 0)
-    //            Invoke(nameof(EndGame), 1f);
+    public void CheckGameEnd()
+    {
+        if (characters.Count <= 0)
+        {
+            CheckGameEndServerRpc();
+        }
+    }
 
-    //    }
-    //    private void EndGame()
-    //    {
-    //        BoardManager.Instance.pv.RPC("EndGame", RpcTarget.All, PhotonNetwork.LocalPlayer);
-    //        AssignXP();
-    //    }
+    [ServerRpc]
+    public void CheckGameEndServerRpc()
+    {
+        EndGameClientRpc();
+    }
+
+    [ClientRpc]
+    public void EndGameClientRpc()
+    {
+        if (IsLocalPlayer)
+        {
+            BoardManager.instance.SetWinPanel("You Lose");
+        }
+        else
+        {
+            BoardManager.instance.SetWinPanel("You Win");
+        }
+    }
 }
 
 public struct NetworkString : INetworkSerializable

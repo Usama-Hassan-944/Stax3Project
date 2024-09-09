@@ -232,7 +232,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
+      - m_Target: {fileID: 4701659154088751130}
         m_TargetAssemblyTypeName: CubeSyncer, Assembly-CSharp
         m_MethodName: OnActionTaken
         m_Mode: 1
@@ -365,7 +365,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
+      - m_Target: {fileID: 4701659154088751130}
         m_TargetAssemblyTypeName: CubeSyncer, Assembly-CSharp
         m_MethodName: OnActionTaken
         m_Mode: 1

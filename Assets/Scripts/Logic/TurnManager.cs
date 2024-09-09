@@ -40,6 +40,8 @@ public class TurnManager : NetworkBehaviour
             currentTurnTime.Value -= Time.deltaTime;
             if (currentTurnTime.Value <= 0)
             {
+                BoardManager.instance.ResetPlayerMovesData();
+                BoardManager.instance.ResetActiveSyncers();
                 EndTurnServerRpc();
             }
         }

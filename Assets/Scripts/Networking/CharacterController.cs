@@ -68,6 +68,23 @@ public class CharacterController : NetworkBehaviour
 
         StartCoroutine(SpawnBody(index));
     }
+    public void SetHealth(int health)
+    {
+        healthText.text = health.ToString();
+        healthSlider.value = health;
+    }
+
+    public void SetAttack(int attack)
+    {
+        attackText.text = attack.ToString();
+        attackSlider.value = attack;
+    }
+
+    public void SetDefence(int defence)
+    {
+        defenceText.text = defence.ToString();
+        defenceSlider.value = defence;
+    }
 
     public IEnumerator SpawnBody(int index)
     {
@@ -92,9 +109,6 @@ public class CharacterController : NetworkBehaviour
         {
             RequestSpawnCharacterServerRpc(index);
         }
-
-        // _pv.RPC("InitCharacter", RpcTarget.All, ID, SpawnIndex, index);
-
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -103,74 +117,85 @@ public class CharacterController : NetworkBehaviour
         StartCoroutine(SpawnBody(index));
     }
 
-    //    [PunRPC]
-    //    public void CalculateDamage(int DamageAmmont, bool TrueDamage)
-    //    {
-    //        int _damage;
-    //        if (!TrueDamage)
-    //        {
-    //            body.GetComponent<CharacterNetworked>().pv.RPC("HealthVFX", RpcTarget.All);
-    //            _damage = DamageAmmont - characterProps.Defence;
-    //        }
-    //        else
-    //        {
-    //            body.GetComponent<CharacterNetworked>().pv.RPC("AbilityVFX", RpcTarget.All);
-    //            _damage = DamageAmmont;
-    //        }
-    //            this.UpdateHealth(_damage);
-    //    }
-
-    //    [PunRPC]
-    //    public void Die()
-    //    {
-    //        body.GetComponent<CharacterNetworked>().pv.RPC("Die", RpcTarget.All);
-
-    //            foreach (var player in BoardManager.Instance.players)       
-    //                if (player.pv.IsMine)
-    //                {
-    //                    this.blockID = BlockID.none;
-    //                    player.characters.Remove(this);
-    //                    player.CheckGameEnd();
-    //                }
-
-    //        Invoke(nameof(Destroy),0.5f);
-    //    }
-    //    private void Destroy()
-    //    {
-    //        GameObject.Destroy(this.gameObject);  
-    //    }
-
-    //    public void UpdateHealth(int health)
-    //    {
-    //        characterProps.Health -= health;
-
-    //        if (characterProps.Health > 0)
-    //        {
-    //            Health.text = characterProps.Health.ToString();
-    //            HealthSlider.DOValue(characterProps.Health, 1, true);
-    //        }
-    //        else
-    //        {
-    //            BoardManager.Instance.RewardPlayerKillXP((int)characterProps.DeadXP);
-    //            pv.RPC("Die", RpcTarget.All);
-    //        }
-    //    }
-
-    public void SetHealth(int health)
+    [ServerRpc(RequireOwnership = false)]
+    public void CalculateDamageServerRpc(int damageAmount, ulong uid)
     {
-        healthText.text = health.ToString();
-        healthSlider.value = health;
+        if (body.GetComponent<CharacterNetworked>().networkObject.NetworkObjectId != uid)
+        {
+            return;
+        }
+
+        int _damage = damageAmount - characterObj.Defence;
+        UpdateHealth(_damage, uid);
     }
 
-    public void SetAttack(int attack)
+    public void UpdateHealth(int health, ulong uid)
     {
-        attackText.text = attack.ToString();
-        attackSlider.value = attack;
+        if (IsOwner)
+        {
+            Health.Value -= health;
+            SetHealth(Health.Value);
+            if (Health.Value <= 0)
+            {
+                DieServerRpc(uid);
+            }
+
+            else
+            {
+                body.GetComponent<CharacterNetworked>().HealthVFXClientRpc(uid);
+            }
+        }
     }
 
-    public void SetDefence(int defence)
+    [ServerRpc]
+    public void DieServerRpc(ulong uid, ServerRpcParams rpcParams = default)
     {
-        defenceText.text = defence.ToString();
-        defenceSlider.value = defence;
+        if (body.GetComponent<CharacterNetworked>().networkObject.NetworkObjectId != uid)
+        {
+            return;
+        }
+        ulong puid;
+        int index = 1;
+        body.GetComponent<CharacterNetworked>().DieVFXClientRpc(uid);
+        puid = body.GetComponent<CharacterNetworked>().playerController.networkObject.NetworkObjectId;
+        this.blockID = BlockID.none;
+        for (int i = 0; i < body.GetComponent<CharacterNetworked>().playerController.characters.Count; i++)
+        {
+            if (body.GetComponent<CharacterNetworked>().playerController.characters[i] == this)
+            {
+                index = i;
+            }
+        }
+        CharacterNetworked c = body.GetComponent<CharacterNetworked>();
+        NotifyClientsOfCharacterDestructionClientRpc(puid, index);
+        foreach (var player in BoardManager.instance.players)
+        {
+            if (player.networkObject.IsOwner)
+            {
+                this.blockID = BlockID.none;
+                player.characters.Remove(this);
+                player.CheckGameEnd();
+            }
+        }
+        c.networkObject.Despawn();
+        Invoke(nameof(Destroy), 0.5f);
+    }
+
+    [ClientRpc]
+    private void NotifyClientsOfCharacterDestructionClientRpc(ulong puid, int index)
+    {
+        if (puid == myPlayerController.networkObject.NetworkObjectId)
+        {
+            if (myPlayerController.characters.Count > index)
+            {
+                myPlayerController.characters.RemoveAt(index);
+                Invoke(nameof(Destroy), 0.5f);
+            }
+        }
+    }
+
+    private void Destroy()
+    {
+        GameObject.Destroy(this.gameObject);
     }
 }

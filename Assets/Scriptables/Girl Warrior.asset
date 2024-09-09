@@ -17,12 +17,11 @@ MonoBehaviour:
   Role: Warrior
   Level: 1
   ID: 1
-  Character_Class: 2
   Character_Sprite: {fileID: 21300000, guid: dde54745fd2ddc94ea99f31a86934d68, type: 3}
   Character_Power_Sprite: {fileID: 21300000, guid: 55aac4d93f232464c88cd97596839db9, type: 3}
   Attack_Power: 80
   Defence: 15
-  Health: 160
+  Health: 30
   Movement: 3
   Movement_Range: 1
   Attack: 1

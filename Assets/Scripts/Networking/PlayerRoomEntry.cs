@@ -34,7 +34,6 @@ public class PlayerRoomEntry : MonoBehaviour
     public void UpdateReadyStatus()
     {
         isPlayerReady = !isPlayerReady;
-        // LobbyManager.instance.UpdatePlayerReadyStatus(isPlayerReady);
     }
 
     public void UpdateEntry(Player player)
